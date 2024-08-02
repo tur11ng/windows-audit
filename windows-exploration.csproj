@@ -7,12 +7,13 @@
 	    <Nullable>enable</Nullable>
 	</PropertyGroup>
 	<ItemGroup>
-	  <PackageReference Include="System.DirectoryServices" Version="9.0.0-preview.6.24327.7" />
-	  <PackageReference Include="System.DirectoryServices.AccountManagement" Version="9.0.0-preview.6.24327.7" />
+		<PackageReference Include="System.DirectoryServices" Version="9.0.0-preview.6.24327.7" />
+		<PackageReference Include="System.DirectoryServices.AccountManagement" Version="9.0.0-preview.6.24327.7" />
+		<PackageReference Include="Microsoft.GroupPolicy" Version="2.2.0" />
 	</ItemGroup>
-
 	<ItemGroup>
 	    <Reference Include="System.DirectoryServices" />
 	    <Reference Include="System.DirectoryServices.AccountManagement" />
+		<Reference Include="Microsoft.GroupPolicy" />
 	</ItemGroup>
 </Project>
