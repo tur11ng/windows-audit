@@ -6,20 +6,20 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "windows-exploration", "windows-exploration.csproj", "{FB49BA1B-84DE-4E34-9C37-3B786071D620}"
 EndProject
 Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FB49BA1B-84DE-4E34-9C37-3B786071D620}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FB49BA1B-84DE-4E34-9C37-3B786071D620}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FB49BA1B-84DE-4E34-9C37-3B786071D620}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FB49BA1B-84DE-4E34-9C37-3B786071D620}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {CEE6E06F-5C8A-4093-B28A-89EDA904234B}
-	EndGlobalSection
+        GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                Debug|Any CPU = Debug|Any CPU
+                Release|Any CPU = Release|Any CPU
+        EndGlobalSection
+        GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                {FB49BA1B-84DE-4E34-9C37-3B786071D620}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                {FB49BA1B-84DE-4E34-9C37-3B786071D620}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                {FB49BA1B-84DE-4E34-9C37-3B786071D620}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                {FB49BA1B-84DE-4E34-9C37-3B786071D620}.Release|Any CPU.Build.0 = Release|Any CPU
+        EndGlobalSection
+        GlobalSection(SolutionProperties) = preSolution
+                HideSolutionNode = FALSE
+        EndGlobalSection
+        GlobalSection(ExtensibilityGlobals) = postSolution
+                SolutionGuid = {CEE6E06F-5C8A-4093-B28A-89EDA904234B}
+        EndGlobalSection
 EndGlobal

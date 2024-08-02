@@ -1,22 +1,13 @@
 
+using System.Diagnostics;
 using System.DirectoryServices;
-using System.DirectoryServices.ActiveDirectory;
 using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace windows_exploration 
 {
     public class Utilities
     {
-        public static readonly string[] PrivilegedGroups = new string[] {
-            "Domain Admins",
-            "Enterprise Admins",
-            "Schema Admins",
-            "Administrators",
-            "Account Operators",
-            "Backup Operators",
-            "Server Operators",
-            "Print Operators"
-        };
         public static bool IsInterestingACL(ActiveDirectoryAccessRule rule)
         {
             ActiveDirectoryRights[] interestingRights = new ActiveDirectoryRights[]
@@ -40,7 +31,8 @@ namespace windows_exploration
             return false;
         }
 
-        public static bool HasObjectInterestingACL(DirectoryEntry directoryEntry) {
+        public static bool HasObjectInterestingACL(DirectoryEntry directoryEntry)
+        {
             ActiveDirectorySecurity security = directoryEntry.ObjectSecurity;
             AuthorizationRuleCollection acl = security.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
             
@@ -54,26 +46,38 @@ namespace windows_exploration
             return false;
         }
 
-        public static string FriendlyDomainToLdapDomain(string friendlyDomainName)
+        public static IEnumerable<ActiveDirectoryAccessRule> GetObjectInterestingACL(DirectoryEntry directoryEntry)
         {
+            ActiveDirectorySecurity security = directoryEntry.ObjectSecurity;
+            AuthorizationRuleCollection acl = security.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
 
-            DirectoryContext objContext = new DirectoryContext(DirectoryContextType.Domain, friendlyDomainName);
-            Domain objDomain = Domain.GetDomain(objContext);
-            return objDomain.Name;
+            foreach (ActiveDirectoryAccessRule rule in acl)
+            {
+                if (IsInterestingACL(rule))
+                {
+                    yield return rule;
+                }
+            }
         }
 
-        private bool Authenticate(string domainName, string userName, string password)
+        public static bool IsRunningAsAdministrator()
         {
-            bool authentic = false;
-            try
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
+        static void ElevateToAdministrator()
+        {
+            var proc = new ProcessStartInfo
             {
-                DirectoryEntry entry = new DirectoryEntry("LDAP://" + domainName,
-                    userName, password);
-                object nativeObject = entry.NativeObject;
-                authentic = true;
-            }
-            catch (DirectoryServicesCOMException) { }
-            return authentic;
+                UseShellExecute = true,
+                WorkingDirectory = Environment.CurrentDirectory,
+                FileName = Process.GetCurrentProcess()?.MainModule?.FileName,
+                Verb = "runas"
+            };
+
+            Process.Start(proc);
         }
     }
 }

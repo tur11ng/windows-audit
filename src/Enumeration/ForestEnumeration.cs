@@ -43,7 +43,7 @@ namespace windows_exploration
             return dictionary;
         }
 
-        public static Dictionary<Domain, Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>>> GetForestPrivilegedGroupsMembers(bool recursive)
+        public static Dictionary<Domain, Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>>> GetForestPrivilegedGroupsMembers(string domainName, bool recursive)
         {
             var forest = Forest.GetCurrentForest();
             var dictionary = new Dictionary<Domain, Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>>>();
@@ -54,14 +54,6 @@ namespace windows_exploration
             }
 
             return dictionary;
-        }
-
-        public static IEnumerable<GlobalCatalog> GetForestGlobalCatalogs() {
-            var forest = Forest.GetCurrentForest();
-            foreach (GlobalCatalog globalCatalog in forest.GlobalCatalogs)
-            {
-                yield return globalCatalog;
-            }
         }
     }
 }
