@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
+using System.Security.AccessControl;
 
 namespace windows_exploration
 {
@@ -10,11 +11,6 @@ namespace windows_exploration
     {
         public static IEnumerable<UserPrincipal> GetDomainUsers(string? domainName)
         {
-            if (string.IsNullOrEmpty(domainName))
-            {
-                domainName = Domain.GetCurrentDomain().Name;
-            }
-
             using PrincipalContext context = new(ContextType.Domain, domainName);
             using UserPrincipal searchFilter = new(context) { Enabled = true };
             using PrincipalSearcher searcher = new(searchFilter);
@@ -72,11 +68,6 @@ namespace windows_exploration
 
         public static Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>> GetDomainPrivilegedGroupsMembers(string? domainName, bool recursive)
         {
-            if (string.IsNullOrEmpty(domainName))
-            {
-                domainName = Domain.GetCurrentDomain().Name;
-            }
-
             var context = new PrincipalContext(ContextType.Domain, domainName);
             var groups = new Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>>();
 
@@ -130,24 +121,42 @@ namespace windows_exploration
             }
         }
 
-        public static IEnumerable<DirectoryEntry> GetDomainObjectsWithInterestingACL(string? domainName)
+        public static IEnumerable<DirectoryEntry> GetDomainObjectsWithInterestingACL(string domainName)
         {
-            if (string.IsNullOrEmpty(domainName))
-            {
-                domainName = Domain.GetCurrentDomain().Name;
-            }
+            string domainPath = $"ldap://{domainName}";
 
-            string domainPath = $"LDAP://{domainName}";
-            using (DirectoryEntry searchFilter = new DirectoryEntry(domainPath))
-            using (DirectorySearcher searcher = new DirectorySearcher(searchFilter))
+            using (DirectoryEntry entry = new DirectoryEntry(domainPath))
+            using (DirectorySearcher searcher = new DirectorySearcher(entry))
             {
                 searcher.Filter = "(objectClass=*)";
 
                 foreach (SearchResult result in searcher.FindAll())
                 {
                     DirectoryEntry directoryEntry = result.GetDirectoryEntry();
-                    if (Utilities.HasObjectInterestingACL(directoryEntry)) {
+                    if (Utilities.HasObjectInterestingACL(directoryEntry))
+                    {
                         yield return directoryEntry;
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<string> GetCertificatesWithExcessivePermissions(string domainName)
+        {
+            DirectoryEntry entry = new DirectoryEntry($"LDAP://CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,DC={domainName}");
+            foreach (DirectoryEntry template in entry.Children)
+            {
+                ActiveDirectorySecurity security = template.ObjectSecurity;
+                AuthorizationRuleCollection rules = security.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
+
+                foreach (ActiveDirectoryAccessRule rule in rules)
+                {
+                    foreach (var groupName in Utilities.PrivilegedGroups)
+                    {
+                        if (rule.IdentityReference.Value.Contains(groupName) && rule.AccessControlType == AccessControlType.Allow)
+                        {
+                            yield return template?.Properties["cn"][0]?.ToString();
+                        }
                     }
                 }
             }
