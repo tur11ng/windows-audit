@@ -4,6 +4,7 @@ using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace windows_exploration
 {
@@ -22,6 +23,8 @@ namespace windows_exploration
 
         public static IEnumerable<UserPrincipal> GetDomainUsers(string domainName)
         {
+            domainName = Utilities.GetDomainNameOrDefault(domainName);
+
             using PrincipalContext context = new(ContextType.Domain, domainName);
             using UserPrincipal userPrincipal = new(context) { Enabled = true };
             using PrincipalSearcher searcher = new(userPrincipal);
@@ -39,6 +42,8 @@ namespace windows_exploration
 
         public static IEnumerable<GroupPrincipal> GetDomainGroups(string domainName)
         {
+            domainName = Utilities.GetDomainNameOrDefault(domainName);
+
             using PrincipalContext context = new(ContextType.Domain, domainName);
             using GroupPrincipal groupPrincipal = new(context);
             using PrincipalSearcher searcher = new(groupPrincipal);
@@ -54,8 +59,10 @@ namespace windows_exploration
             }
         }
 
-        public static IEnumerable<UserPrincipal> GetGroupMembers(GroupPrincipal group, bool recursive)
+        public static IEnumerable<UserPrincipal> GetGroupMembers(string domainName, GroupPrincipal group, bool recursive)
         {
+            domainName = Utilities.GetDomainNameOrDefault(domainName);
+
             foreach (var principal in group.GetMembers(recursive))
             {
                 if (principal is UserPrincipal user)
@@ -64,7 +71,7 @@ namespace windows_exploration
                 }
                 else if (principal is GroupPrincipal nestedGroup && recursive)
                 {
-                    foreach (var nestedUser in GetGroupMembers(nestedGroup, recursive))
+                    foreach (var nestedUser in GetGroupMembers(domainName, nestedGroup, recursive))
                     {
                         yield return nestedUser;
                     }
@@ -74,6 +81,8 @@ namespace windows_exploration
 
         public static Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>> GetDomainPrivilegedGroupsMembers(string domainName, bool recursive)
         {
+            domainName = Utilities.GetDomainNameOrDefault(domainName);
+
             var context = new PrincipalContext(ContextType.Domain, domainName);
             var groups = new Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>>();
 
@@ -82,15 +91,18 @@ namespace windows_exploration
                 var group = GroupPrincipal.FindByIdentity(context, groupName);
                 if (group != null)
                 {
-                    var members = GetGroupMembers(group, recursive);
-                    groups.Add(group, GetGroupMembers(group, recursive));
+                    var members = GetGroupMembers(domainName, group, recursive);
+                    groups.Add(group, GetGroupMembers(domainName,group, recursive));
                 }
             }
 
             return groups;
         }
 
-        public static IEnumerable<DirectoryEntry> GetDomainObjectsWithInterestingACL(string domainName) {
+        public static IEnumerable<DirectoryEntry> GetDomainObjectsWithInterestingACL(string domainName)
+        {
+            domainName = Utilities.GetDomainNameOrDefault(domainName);
+
             string domainPath = $"ldap://{domainName}";
 
             using (DirectoryEntry entry = new DirectoryEntry(domainPath))
@@ -108,26 +120,40 @@ namespace windows_exploration
                 }
             }
         }
-        
-        public static IEnumerable<string> GetCertificatesWithExcessivePermissions(string domainName)
-        {
-            DirectoryEntry entry = new DirectoryEntry($"LDAP://CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,DC={domainName}");
-            foreach (DirectoryEntry template in entry.Children)
-            {
-                ActiveDirectorySecurity security = template.ObjectSecurity;
-                AuthorizationRuleCollection rules = security.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
 
-                foreach (ActiveDirectoryAccessRule rule in rules)
+        public static List<string> GetEnrollableCertificateTemplates(string domainName)
+        {
+            domainName = Utilities.GetDomainNameOrDefault(domainName);
+
+            List<string> templates = new List<string>();
+
+            string ldapPath = $"LDAP://CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,DC={domainName},DC=com";
+
+            WindowsIdentity currentUser = WindowsIdentity.GetCurrent();
+            SecurityIdentifier userSid = currentUser.User;
+
+            using (DirectoryEntry entry = new DirectoryEntry(ldapPath))
+            {
+                foreach (DirectoryEntry child in entry.Children)
                 {
-                    foreach (var groupName in PrivilegedGroups)
+                    ActiveDirectorySecurity security = child.ObjectSecurity;
+
+                    AuthorizationRuleCollection rules = security.GetAccessRules(true, true, typeof(SecurityIdentifier));
+                    foreach (ActiveDirectoryAccessRule rule in rules)
                     {
-                        if (rule.IdentityReference.Value.Contains(groupName) && rule.AccessControlType == AccessControlType.Allow)
+                        if (rule.IdentityReference == userSid &&
+                            (rule.AccessControlType == AccessControlType.Allow) &&
+                            (rule.ActiveDirectoryRights.HasFlag(ActiveDirectoryRights.ExtendedRight)) &&
+                            (rule.ObjectType == new Guid("0e10c968-78fb-11d2-90d4-00c04f79dc55"))) // Certificate-Enrollment GUID
                         {
-                            yield return template?.Properties["cn"][0]?.ToString();
+                            templates.Add(child.Name);
+                            break;
                         }
                     }
                 }
             }
+
+            return templates;
         }
     }
 }
