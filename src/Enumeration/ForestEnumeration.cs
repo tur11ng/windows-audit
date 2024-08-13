@@ -7,17 +7,6 @@ namespace windows_exploration
 {
     public class ForestEnumeration
     {
-        private static readonly string[] PrivilegedGroups = new string[] {
-            "Domain Admins",
-            "Enterprise Admins",
-            "Schema Admins",
-            "Administrators",
-            "Account Operators",
-            "Backup Operators",
-            "Server Operators",
-            "Print Operators"
-        };
-        
         public static IEnumerable<GroupPrincipal> GetForestGroups() 
         {
             var forest = Forest.GetCurrentForest();

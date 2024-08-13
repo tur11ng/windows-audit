@@ -10,17 +10,6 @@ namespace windows_exploration
 {
     public class DomainEnumeration
     {
-        private static readonly string[] PrivilegedGroups = new string[] {
-            "Domain Admins",
-            "Enterprise Admins",
-            "Schema Admins",
-            "Administrators",
-            "Account Operators",
-            "Backup Operators",
-            "Server Operators",
-            "Print Operators"
-        };
-
         public static IEnumerable<UserPrincipal> GetDomainUsers(string domainName)
         {
             domainName = Utilities.GetDomainNameOrDefault(domainName);
