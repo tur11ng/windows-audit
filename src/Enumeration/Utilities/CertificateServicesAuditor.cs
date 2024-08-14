@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WindowsAudit.Privilege_Escallation
+namespace WindowsAudit.Enumeration.Utilities
 {
-    class ForestPrivilegeEscallation
+    class CertificateServicesAuditor
     {
+
     }
 }

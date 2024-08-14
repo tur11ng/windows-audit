@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.DirectoryServices;
+﻿using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
-using System.DirectoryServices.ActiveDirectory;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
-namespace windows_exploration
+namespace WindowsAudit.Enumeration
 {
     public class DomainEnumeration
     {
         public static IEnumerable<UserPrincipal> GetDomainUsers(string domainName)
         {
-            domainName = Utilities.GetDomainNameOrDefault(domainName);
+            domainName = Utilities.Misc.GetDomainNameOrDefault(domainName);
 
             using PrincipalContext context = new(ContextType.Domain, domainName);
             using UserPrincipal userPrincipal = new(context) { Enabled = true };
@@ -31,7 +28,7 @@ namespace windows_exploration
 
         public static IEnumerable<GroupPrincipal> GetDomainGroups(string domainName)
         {
-            domainName = Utilities.GetDomainNameOrDefault(domainName);
+            domainName = Utilities.Misc.GetDomainNameOrDefault(domainName);
 
             using PrincipalContext context = new(ContextType.Domain, domainName);
             using GroupPrincipal groupPrincipal = new(context);
@@ -50,7 +47,7 @@ namespace windows_exploration
 
         public static IEnumerable<UserPrincipal> GetGroupMembers(string domainName, GroupPrincipal group, bool recursive)
         {
-            domainName = Utilities.GetDomainNameOrDefault(domainName);
+            domainName = Utilities.Misc.GetDomainNameOrDefault(domainName);
 
             foreach (var principal in group.GetMembers(recursive))
             {
@@ -70,18 +67,18 @@ namespace windows_exploration
 
         public static Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>> GetDomainPrivilegedGroupsMembers(string domainName, bool recursive)
         {
-            domainName = Utilities.GetDomainNameOrDefault(domainName);
+            domainName = Utilities.Misc.GetDomainNameOrDefault(domainName);
 
             var context = new PrincipalContext(ContextType.Domain, domainName);
             var groups = new Dictionary<GroupPrincipal, IEnumerable<UserPrincipal>>();
 
-            foreach (var groupName in PrivilegedGroups)
+            foreach (var groupName in WindowsAudit.Utilities.Misc.PrivilegedGroups)
             {
                 var group = GroupPrincipal.FindByIdentity(context, groupName);
                 if (group != null)
                 {
                     var members = GetGroupMembers(domainName, group, recursive);
-                    groups.Add(group, GetGroupMembers(domainName,group, recursive));
+                    groups.Add(group, GetGroupMembers(domainName, group, recursive));
                 }
             }
 
@@ -90,7 +87,7 @@ namespace windows_exploration
 
         public static IEnumerable<DirectoryEntry> GetDomainObjectsWithInterestingACL(string domainName)
         {
-            domainName = Utilities.GetDomainNameOrDefault(domainName);
+            domainName = Utilities.Misc.GetDomainNameOrDefault(domainName);
 
             string domainPath = $"ldap://{domainName}";
 
@@ -102,7 +99,7 @@ namespace windows_exploration
                 foreach (SearchResult result in searcher.FindAll())
                 {
                     DirectoryEntry directoryEntry = result.GetDirectoryEntry();
-                    if (Utilities.HasObjectInterestingACL(directoryEntry))
+                    if (Utilities.Misc.HasObjectInterestingACL(directoryEntry))
                     {
                         yield return directoryEntry;
                     }
@@ -110,9 +107,9 @@ namespace windows_exploration
             }
         }
 
-        public static List<string> GetEnrollableCertificateTemplates(string domainName)
+        public static IEnumerable<string> GetEnrollableCertificateTemplates(string domainName)
         {
-            domainName = Utilities.GetDomainNameOrDefault(domainName);
+            domainName = Utilities.Misc.GetDomainNameOrDefault(domainName);
 
             List<string> templates = new List<string>();
 
@@ -133,7 +130,7 @@ namespace windows_exploration
                         if (rule.IdentityReference == userSid &&
                             (rule.AccessControlType == AccessControlType.Allow) &&
                             (rule.ActiveDirectoryRights.HasFlag(ActiveDirectoryRights.ExtendedRight)) &&
-                            (rule.ObjectType == new Guid("0e10c968-78fb-11d2-90d4-00c04f79dc55"))) // Certificate-Enrollment GUID
+                            (rule.ObjectType == new Guid("0e10c968-78fb-11d2-90d4-00c04f79dc55")))
                         {
                             templates.Add(child.Name);
                             break;

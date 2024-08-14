@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 
-namespace windows_exploration
+namespace WindowsAudit.Enumeration
 {
     public class ForestEnumeration
     {
